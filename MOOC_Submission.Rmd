@@ -1,0 +1,77 @@
+---
+title: "MOOC Machine learning submission"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## GitHub Documents
+
+This is an R Markdown format used for publishing markdown documents to GitHub. When you click the **Knit** button all R code chunks are run and a markdown file (.md) suitable for publishing to GitHub is generated.
+
+## Including Code
+
+You can include R code in the document as follows:
+
+```{r installation}
+#Library installation
+library(AppliedPredictiveModeling)
+library(caret)
+library(randomForest)
+library(rpart)
+```
+
+#Import data
+```{r importdata, echo=FALSE}
+trainSource=read.table("C:\\Users\\malvin\\Documents\\Marie\\MOOC\\Practical Machine Learning\\Final_project\\Data source\\pml-training.csv", header=TRUE, sep=",",quote="\"'")
+testSource=read.table("C:\\Users\\malvin\\Documents\\Marie\\MOOC\\Practical Machine Learning\\Final_project\\Data source\\pml-testing.csv", header=TRUE, sep=",",quote="\"'")
+```
+
+
+```{r cleandata, echo=TRUE}
+#Clean the data by removing variables with lots of NA and remove identified colums
+data_training_NAs=apply(trainSource, 2, function(x) {sum(is.na(x))})
+data_clean=trainSource[,which(data_training_NAs == 0)]
+data_clean=data_clean[8:length(data_clean)]
+data_clean=data_clean[,-c(5:13,36:41,45:53,67:75)]
+
+#CROSS VALIDATION: Split the dataset in training/testing set
+set.seed(6921)
+trainIndex = createDataPartition(data_clean$classe, p = 0.70,list=FALSE)
+training = data_clean[trainIndex,]
+testing = data_clean[-trainIndex,]
+```
+
+```{r model, echo=TRUE}
+#Test of a decision tree
+modelfitRpart=train(classe~.,data=training, method="rpart")
+
+#Test of Random forest
+modelfitRF=train(classe~.,data=training, method="rf")
+```
+
+```{r crossvalidation, echo=TRUE}
+#Cross validation on the testing dataset with rpart and RF model
+predRpart=predict(modelfitRpart,testing)
+confusionMatrix(testing$classe,predRpart)
+
+predRF=predict(modelfitRF,testing)
+confusionMatrix(testing$classe,predRF)
+
+#Rpart
+#Accuracy=0.4928, Out of sample error=0.5072
+
+#Random forest
+#Accuracy=0.9915, Out of sample error=0.0085
+
+#Model choosen is random forest because the performance (out of sample error and accuracy) on the test sample is much more better than decision tree
+
+```
+
+```{r deployment, echo=TRUE}
+#Deployment on the test sample
+predictTest=predict(modelfitRF,testSource)
+predictTest
+```
